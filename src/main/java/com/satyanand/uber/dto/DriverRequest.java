@@ -32,7 +32,7 @@ public class DriverRequest {
 
     private String vehiclePlateNumber;
 
-    @NotNull
+//    @NotNull
     @Builder.Default
     private Boolean isAvailable = true;
 }
