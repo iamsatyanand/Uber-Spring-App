@@ -2,6 +2,7 @@ package com.satyanand.uber.service.impl;
 
 import com.satyanand.uber.dto.BookingRequest;
 import com.satyanand.uber.dto.BookingResponse;
+import com.satyanand.uber.dto.DriverLocationDTO;
 import com.satyanand.uber.entity.Booking;
 import com.satyanand.uber.entity.Driver;
 import com.satyanand.uber.entity.Passenger;
@@ -10,6 +11,7 @@ import com.satyanand.uber.repository.BookingRepository;
 import com.satyanand.uber.repository.DriverRepository;
 import com.satyanand.uber.repository.PassengerRepository;
 import com.satyanand.uber.service.BookingService;
+import com.satyanand.uber.service.LocationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,7 @@ public class BookingServiceImpl implements BookingService {
     private final BookingMapper bookingMapper;
     private final PassengerRepository passengerRepository;
     private final DriverRepository driverRepository;
+    private final LocationService locationService;
 
 
     @Override
@@ -63,6 +66,29 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingResponse create(BookingRequest request) {
+
+        Passenger passenger = passengerRepository.findById(request.getPassengerId())
+                .orElseThrow(() -> new IllegalArgumentException("Passenger not found with id: "+request.getPassengerId()));
+
+        String pickupLat = request.getPickupLocationLatitude() != null
+                ? request.getPickupLocationLatitude().toString()
+                : null;
+
+        String pickupLong = request.getPickupLocationLongitude() != null
+                ? request.getPickupLocationLongitude().toString()
+                : null;
+
+        Booking newBooking = Booking.builder()
+                .passenger(passenger)
+                .pickupLocationLatitude(pickupLat)
+                .pickupLocationLongitude(pickupLong)
+                .status(Booking.BookingStatus.PENDING)
+                .build();
+
+        List<DriverLocationDTO> nearByDrivers = locationService.getNearbyDrivers(request.getPickupLocationLatitude(), request.getPickupLocationLongitude(), 10.0);
+
+
+
         return null;
     }
 
