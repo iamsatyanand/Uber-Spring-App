@@ -1,5 +1,6 @@
 package com.satyanand.uber.service.impl;
 
+import com.satyanand.uber.client.GrpcClient;
 import com.satyanand.uber.dto.BookingRequest;
 import com.satyanand.uber.dto.BookingResponse;
 import com.satyanand.uber.dto.DriverLocationDTO;
@@ -30,6 +31,7 @@ public class BookingServiceImpl implements BookingService {
     private final PassengerRepository passengerRepository;
     private final DriverRepository driverRepository;
     private final LocationService locationService;
+    private final GrpcClient grpcClient;
 
 
     @Override
@@ -129,9 +131,9 @@ public class BookingServiceImpl implements BookingService {
 
         List<DriverLocationDTO> nearByDrivers = locationService.getNearbyDrivers(request.getPickupLocationLatitude(), request.getPickupLocationLongitude(), 10.0);
 
+        grpcClient.notifyDriversForNewRide(pickupLat, pickupLong, Integer.parseInt(savedBooking.getId().toString()), nearByDrivers.stream().map(DriverLocationDTO::getDriverId).toList());
 
-
-        return null;
+        return bookingMapper.toResponse(savedBooking);
     }
 
     @Override
