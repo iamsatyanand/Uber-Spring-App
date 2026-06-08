@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -70,6 +71,28 @@ public class BookingServiceImpl implements BookingService {
         Passenger passenger = passengerRepository.findById(request.getPassengerId())
                 .orElseThrow(() -> new IllegalArgumentException("Passenger not found with id: "+request.getPassengerId()));
 
+        // handle driver assignment if provided
+        Driver driver = null;
+
+        Booking.BookingStatus status = Booking.BookingStatus.PENDING;
+
+        if(request.getDriverId() != null){
+            driver = driverRepository.findById(request.getDriverId())
+                    .orElseThrow(() -> new IllegalArgumentException("Driver not found with id: " + request.getDriverId()));
+
+            // Check if driver is available
+            if (!driver.getIsAvailable()) {
+                throw new IllegalStateException("Driver with id " + request.getDriverId() + " is not available");
+            }
+
+            // Assign driver and mark as unavailable
+            driver.setIsAvailable(false);
+            driverRepository.save(driver);
+            status = Booking.BookingStatus.CONFIRMED;
+
+        }
+
+
         String pickupLat = request.getPickupLocationLatitude() != null
                 ? request.getPickupLocationLatitude().toString()
                 : null;
@@ -78,12 +101,31 @@ public class BookingServiceImpl implements BookingService {
                 ? request.getPickupLocationLongitude().toString()
                 : null;
 
+        if (pickupLat == null || pickupLong == null) {
+            throw new IllegalArgumentException("Pickup location latitude and longitude are required");
+        }
+
+        // // Set default fare if not provided
+        BigDecimal fare = request.getFare();
+        if (fare == null) {
+            fare = BigDecimal.ZERO; // Default fare, can be calculated later
+        }
+
+        // // Create booking
         Booking newBooking = Booking.builder()
                 .passenger(passenger)
+                .driver(driver)
                 .pickupLocationLatitude(pickupLat)
                 .pickupLocationLongitude(pickupLong)
-                .status(Booking.BookingStatus.PENDING)
+                .dropoffLocation(request.getDropoffLocation())
+                .status(status)
+                .fare(fare)
+                .scheduledPickupTime(request.getScheduledPickupTime())
                 .build();
+
+        Booking savedBooking = bookingRepository.save(newBooking);
+
+        // Find the nearby drivers and then trigger an RPC to uber socket service to notify them
 
         List<DriverLocationDTO> nearByDrivers = locationService.getNearbyDrivers(request.getPickupLocationLatitude(), request.getPickupLocationLongitude(), 10.0);
 
