@@ -148,7 +148,20 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public Boolean acceptRide(Long id, Integer driverId) {
-        return null;
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found with id: " + id));
+
+        Driver driver = driverRepository.findById(driverId)
+                .orElseThrow(() -> new IllegalArgumentException("Driver not found with id: " + driverId));
+
+        booking.setDriver(driver);
+        driver.setIsAvailable(false);
+        driverRepository.save(driver);
+
+        booking.setStatus(Booking.BookingStatus.CONFIRMED);
+        bookingRepository.save(booking);
+
+        return true;
     }
 
     @Override
