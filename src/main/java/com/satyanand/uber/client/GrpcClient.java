@@ -15,11 +15,11 @@ import java.util.List;
 @Component
 public class GrpcClient {
 
-    @Value("${grpc.server.port:9090}")
-    private int grpcServerPort;
+    @Value("${grpc.client.port:9091}")
+    private int grpcClientPort;
 
-    @Value("${grpc.server.host:localhost}")
-    private String grpcServerHost;
+    @Value("${grpc.client.host:localhost}")
+    private String grpcClientHost;
 
     private ManagedChannel channel;
 
@@ -27,7 +27,7 @@ public class GrpcClient {
 
     @PostConstruct
     public void init(){
-        channel = ManagedChannelBuilder.forAddress(grpcServerHost, grpcServerPort)
+        channel = ManagedChannelBuilder.forAddress(grpcClientHost, grpcClientPort)
                 .usePlaintext()
                 .build();
         rideNotificationServiceStub = RideNotificationServiceGrpc.newBlockingStub(channel);
